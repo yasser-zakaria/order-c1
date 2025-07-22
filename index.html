@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>طلب الطعام</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+      padding: 20px;
+      text-align: center;
+    }
+    header {
+      background-color: #ff9800;
+      color: white;
+      padding: 20px 15px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    header p {
+      margin-top: 8px;
+      font-size: 18px;
+    }
+    .tabs-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .tab-button {
+      padding: 10px 20px;
+      background-color: #ffe0b2;
+      border: none;
+      border-radius: 25px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .tab-button.active {
+      background-color: #fb8c00;
+      color: white;
+      font-weight: bold;
+    }
+    .menu-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      justify-items: center;
+    }
+    .card {
+      background-color: white;
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 300px;
+      border: 2px solid #ffcc80;
+    }
+    .item-title {
+      font-size: 20px;
+      color: #6d4c41;
+      margin-bottom: 5px;
+    }
+    .item-description {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .item-price {
+      color: #ff5722;
+      margin-bottom: 10px;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+    }
+    .controls button {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      border: none;
+      background-color: #fb8c00;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    #total-price {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2e7d32;
+      margin-top: 20px;
+    }
+    button.submit-btn {
+      padding: 12px 25px;
+      background-color: #4caf50;
+      color: white;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      margin-top: 25px;
+      cursor: pointer;
+    }
+    #notes {
+      width: 90%;
+      padding: 10px;
+      margin-top: 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-family: 'Cairo', sans-serif;
+    }
+    #success-message {
+      margin-top: 25px;
+      padding: 15px;
+      background-color: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 10px;
+      color: #2e7d32;
+      display: none;
+      text-align: right;
+      direction: rtl;
+    }
+    #receipt-list {
+      margin-top: 10px;
+      font-size: 18px;
+    }
+    #floating-cart-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px; /* ← تم تعديله من right إلى left */
+      background-color: #fb8c00;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      cursor: pointer;
+      display: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <img src="https://res.cloudinary.com/dsahh7m1o/image/upload/v1752649689/p3cjhplhsxfwyzbjr48x.png" alt="Smart Order Logo" style="max-width: 120px; height: auto; margin-bottom: 10px;">
+    <h1>📝 مرحبًا بك في منيو الطلب</h1>
+    <p>طاولة رقم <span id="table-number">؟</span></p>
+  </div>
+</header>
+<div id="category-tabs" class="tabs-container"></div>
+<form id="order-form">
+  <div class="menu-container" id="menu-container"></div>
+  <textarea id="notes" placeholder="📝 اكتب ملاحظاتك هنا (اختياري)"></textarea>
+  <p id="total-price">💰 الإجمالي: 0 جنيه</p>
+  <button type="submit" class="submit-btn">📤 مراجعة الطلب</button>
+</form>
+<div id="success-message">
+  <div id="receipt-list"></div>
+</div>
+<button id="floating-cart-btn" onclick="scrollToForm()">🛒 السلة (<span id='cart-count'>0</span>)</button>
+<script>
+  const sheetID = "1QVJ8Hiz-nuburMPjtnJvdY3r0YGC-fLiRAPktXmhc70";
+  const sheetName = "المنيو";
+  const formURL = "https://docs.google.com/forms/d/1YYuAxZeTD9AAm-yo-obzUFGsYbtfwhE04IoBO9q-i5w/edit?pli=1#responses";
+  const entrySummary = "entry.1245515364";
+  const entryTable = "entry.503019879";
+  const entryNotes = "entry.1564520136";
+  const qty = {}, prices = {}, names = {};
+  let allItems = [];
+  function getTableNumber() {
+    const params = new URLSearchParams(window.location.search);
+    const table = params.get("table") || "؟";
+    document.getElementById("table-number").textContent = table;
+    return table;
+  }
+  function changeQty(key, delta) {
+    qty[key] = Math.min(10, Math.max(0, (qty[key] || 0) + delta));
+    document.getElementById(`${key}-qty`).textContent = qty[key];
+    updateTotal();
+    updateFloatingCart();
+  }
+  function updateTotal() {
+    let total = 0;
+    for (let key in qty) {
+      total += qty[key] * prices[key];
+    }
+    document.getElementById("total-price").textContent = `💰 الإجمالي: ${total} جنيه`;
+  }
+  function updateFloatingCart() {
+    let count = 0;
+    for (let key in qty) {
+      count += qty[key];
+    }
+    const btn = document.getElementById("floating-cart-btn");
+    if (count > 0) {
+      btn.style.display = "block";
+      document.getElementById("cart-count").textContent = count;
+    } else {
+      btn.style.display = "none";
+    }
+  }
+  function scrollToForm() {
+    const submitButton = document.querySelector("button.submit-btn");
+    submitButton.click();
+  }
+  function renderMenuForSection(section) {
+    const container = document.getElementById("menu-container");
+    container.innerHTML = "";
+    allItems.filter(row => row[0] === section).forEach((row, i) => {
+      const [sec, name, priceStr, description, imageUrl] = row;
+      const price = parseFloat(priceStr);
+      const key = `item${section}-${i}`;
+      if (!(key in qty)) {
+        qty[key] = 0;
+        prices[key] = price;
+        names[key] = name;
+      }
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        ${imageUrl ? `<img src="${imageUrl}" alt="${name}" style="width:100%; border-radius:10px; margin-bottom:10px;">` : ""}
+        <div class="item-title">${name}</div>
+        ${description ? `<div class="item-description">${description}</div>` : ""}
+        <div class="item-price">${price} ج</div>
+        <div class="controls">
+          <button type="button" onclick="changeQty('${key}', -1)">-</button>
+          <span id="${key}-qty">${qty[key]}</span>
+          <button type="button" onclick="changeQty('${key}', 1)">+</button>
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+  function fetchMenu() {
+    const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
+    fetch(url)
+      .then(res => res.text())
+      .then(text => {
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const rows = json.table.rows.map(r => r.c.map(c => c ? c.v : ""));
+        allItems = rows;
+        const sectionSet = new Set();
+        rows.forEach(row => sectionSet.add(row[0]));
+        const tabsContainer = document.getElementById("category-tabs");
+        tabsContainer.innerHTML = "";
+        sectionSet.forEach(sec => {
+          const btn = document.createElement("button");
+          btn.className = "tab-button";
+          btn.textContent = sec;
+          btn.onclick = () => {
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderMenuForSection(sec);
+          };
+          tabsContainer.appendChild(btn);
+        });
+        if (tabsContainer.firstChild) {
+          tabsContainer.firstChild.click();
+        }
+      });
+  }
+  document.getElementById("order-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const table = getTableNumber();
+    const notes = document.getElementById("notes").value.trim();
+    let summary = "";
+    for (let key in qty) {
+      if (qty[key] > 0) {
+        summary += `- ${names[key]}: ${qty[key]}\n`;
+      }
+    }
+    const total = Object.keys(qty).reduce((acc, k) => acc + qty[k] * prices[k], 0);
+    summary += `\n💰 الإجمالي: ${total} جنيه`;
+    const receipt = document.getElementById("receipt-list");
+    receipt.innerHTML = "<hr><strong>📝 ملخص الطلب:</strong><br>" + summary.replace(/\n/g, "<br>");
+    if (notes) {
+      receipt.innerHTML += `<br><strong>📌 ملاحظات:</strong> ${notes}`;
+    }
+    document.getElementById("success-message").style.display = "block";
+    document.getElementById("order-form").style.display = "none";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.textContent = "✅ تأكيد الإرسال";
+    confirmBtn.className = "submit-btn";
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "✏️ تعديل الطلب";
+    editBtn.className = "submit-btn";
+    editBtn.style.backgroundColor = "#ff9800";
+
+    const btnWrapper = document.createElement("div");
+    btnWrapper.style.display = "flex";
+    btnWrapper.style.flexWrap = "wrap";
+    btnWrapper.style.justifyContent = "center";
+    btnWrapper.style.gap = "10px";
+    btnWrapper.style.marginTop = "15px";
+
+    btnWrapper.appendChild(editBtn);
+    btnWrapper.appendChild(confirmBtn);
+    receipt.appendChild(btnWrapper);
+
+    confirmBtn.onclick = () => {
+      const data = new FormData();
+      data.append(entrySummary, summary);
+      data.append(entryTable, table);
+      data.append(entryNotes, notes);
+      fetch(formURL, {
+        method: "POST",
+        mode: "no-cors",
+        body: data
+      }).then(() => {
+        btnWrapper.remove();
+        receipt.innerHTML += "<br><strong>✅ تم الإرسال بنجاح!</strong>";
+      });
+    };
+
+    editBtn.onclick = () => {
+      document.getElementById("success-message").style.display = "none";
+      document.getElementById("order-form").style.display = "block";
+      receipt.innerHTML = "";
+    };
+  });
+  window.onload = () => {
+    getTableNumber();
+    fetchMenu();
+  };
+</script>
+</body>
+</html>
